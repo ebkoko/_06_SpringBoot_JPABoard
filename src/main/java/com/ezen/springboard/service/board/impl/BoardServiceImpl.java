@@ -87,4 +87,9 @@ public class BoardServiceImpl implements BoardService {
 		
 		boardFileRepository.save(boardFile);
 	}
+	
+	@Override
+	public void updateBoardCnt(int boardNo) {
+		boardRepository.updateBoardCnt(boardNo);
+	}
 }

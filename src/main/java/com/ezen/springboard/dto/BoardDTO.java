@@ -16,7 +16,9 @@ public class BoardDTO {
 	private String boardTitle;
 	private String boardContent;
 	private String boardWriter;
-	private LocalDateTime boardRegdate;
+	// 자바스크립트, 자바단까지는 String으로 처리 후 DB에서 Date형식으로 변환해준다.
+	// 자바 -> 자바스크립트, 자바스크립트 -> 자바로 넘길 때 Date형식으로 처리가 매우 불편하다.
+	private String boardRegdate;
 	private int boardCnt;
 	private String searchCondition;
 	private String searchKeyword;
