@@ -1,9 +1,11 @@
 package com.ezen.springboard.controller;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -148,4 +150,10 @@ public class UserController {
 		}
 	}
 	
+	@RequestMapping("/logout")
+	public void logout(HttpSession session, HttpServletResponse response) throws IOException {		
+		session.invalidate();
+				
+		response.sendRedirect("/");		
+	}
 }

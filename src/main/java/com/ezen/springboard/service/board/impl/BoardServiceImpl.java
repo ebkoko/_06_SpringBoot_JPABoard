@@ -53,15 +53,45 @@ public class BoardServiceImpl implements BoardService {
 	}
 	
 	@Override
-	public void insertBoard(Board board) {
+	public void insertBoard(Board board, List<BoardFile> uploadFileList) {
 		//boardMapper.insertBoard(board);
 		boardRepository.save(board);
+		boardRepository.flush();
+		
+		for(BoardFile boardFile : uploadFileList) {
+			boardFile.setBoard(board);
+			
+			int boardFileNo = boardFileRepository.getMaxFileNo(board.getBoardNo());
+			boardFile.setBoardFileNo(boardFileNo);
+			
+			boardFileRepository.save(boardFile);
+		}
 	}
 	
 	@Override
-	public Board updateBoard(Board board) {
+	public Board updateBoard(Board board, List<BoardFile> uFileList) {
 		//boardMapper.updateBoard(board);
 		boardRepository.save(board);
+		
+		if(uFileList.size() > 0) {
+			for(int i = 0; i < uFileList.size(); i++) {
+				if(uFileList.get(i).getBoardFileStatus().equals("U")) {
+					boardFileRepository.save(uFileList.get(i));
+				} else if(uFileList.get(i).getBoardFileStatus().equals("D")) {
+					boardFileRepository.delete(uFileList.get(i));
+				} else if(uFileList.get(i).getBoardFileStatus().equals("I")) {
+					// 추가한 파일들은 boardNo은 가지고 있지만 boardFileNo이 없는 상태이므로
+					// boardFileNo을 추가
+					int boardFileNo = boardFileRepository.getMaxFileNo(
+							uFileList.get(i).getBoard().getBoardNo());
+					
+					uFileList.get(i).setBoardFileNo(boardFileNo);
+					
+					boardFileRepository.save(uFileList.get(i));
+				}
+			}
+		}
+		
 		boardRepository.flush(); // 커밋 후 새로고침
 		
 		System.out.println(board.toString());
@@ -75,21 +105,16 @@ public class BoardServiceImpl implements BoardService {
 	}
 	
 	@Override
-	public void insertBoardFile(BoardFile boardFile) {
-		// boardNo 지정
-		Board board = new Board();
-		board.setBoardNo(1);
-		boardFile.setBoard(board);
-		
-		// boardFileNo 지정
-		int boardFileNo = boardFileRepository.getMaxFileNo(board.getBoardNo());
-		boardFile.setBoardFileNo(boardFileNo);
-		
-		boardFileRepository.save(boardFile);
+	public void updateBoardCnt(int boardNo) {
+		boardRepository.updateBoardCnt(boardNo);
 	}
 	
 	@Override
-	public void updateBoardCnt(int boardNo) {
-		boardRepository.updateBoardCnt(boardNo);
+	public List<BoardFile> getBoardFileList(int boardNo) {
+		Board board = Board.builder()
+							.boardNo(boardNo)
+							.build();
+		
+		return boardFileRepository.findByBoard(board);
 	}
 }
