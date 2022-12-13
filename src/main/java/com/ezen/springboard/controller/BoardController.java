@@ -14,6 +14,9 @@ import javax.servlet.http.HttpSession;
 import javax.transaction.Transactional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -44,7 +47,8 @@ public class BoardController {
 	private BoardService boardService;
 	
 	@GetMapping("/boardList")
-	public ModelAndView getBoardList(BoardDTO boardDTO) {
+	public ModelAndView getBoardList(BoardDTO boardDTO,
+			@PageableDefault(page = 0, size = 10) Pageable pageable) {
 		Board board = Board.builder()
 							.boardTitle(boardDTO.getBoardTitle())
 							.boardContent(boardDTO.getBoardContent())
@@ -53,6 +57,24 @@ public class BoardController {
 							.searchKeyword(boardDTO.getSearchKeyword())
 							.build();
 		List<Board> boardList = boardService.getBoardList(board);
+		
+		Page<Board> pageBoardList = boardService.getPageBoardList(board, pageable);
+		
+		Page<BoardDTO> pageBoardDTOList = pageBoardList.map(pageBoard -> 
+															BoardDTO.builder()
+																	.boardNo(pageBoard.getBoardNo())
+																	.boardTitle(pageBoard.getBoardTitle())
+																	.boardContent(pageBoard.getBoardContent())
+																	.boardWriter(pageBoard.getBoardWriter())
+																	.boardRegdate(
+																			pageBoard.getBoardRegdate() == null ?
+																			null : 
+																			pageBoard.getBoardRegdate().toString())
+																	.boardCnt(pageBoard.getBoardCnt())
+																	.build()
+															);
+		
+		System.out.println(pageBoardDTOList);
 		
 		List<BoardDTO> getBoardList = new ArrayList<BoardDTO>();
 		for(int i = 0; i < boardList.size(); i++) {
@@ -72,7 +94,15 @@ public class BoardController {
 		
 		ModelAndView mv = new ModelAndView();
 		mv.setViewName("board/getBoardList.html");
-		mv.addObject("getBoardList", getBoardList);
+		mv.addObject("getBoardList", pageBoardDTOList);
+		
+		if(boardDTO.getSearchCondition() != null && !boardDTO.getSearchCondition().equals("")) {
+			mv.addObject("searchCondition", boardDTO.getSearchCondition());
+		}
+		
+		if(boardDTO.getSearchKeyword() != null && !boardDTO.getSearchKeyword().equals("")) {
+			mv.addObject("searchKeyword", boardDTO.getSearchKeyword());
+		}
 		
 		return mv;
 		}
@@ -334,6 +364,35 @@ public class BoardController {
 			boardService.insertBoard(board, uploadFileList);
 			
 			response.sendRedirect("/board/boardList");
+		}
+		
+		@GetMapping("/pageBoardListApi")
+		public ResponseEntity<?> getPageBoardList(Board board, Pageable pageable) {
+			ResponseDTO<Page<BoardDTO>> responseDTO = new ResponseDTO();
+			
+			try {
+				Page<Board> pageBoardList = boardService.getPageBoardList(board, pageable);
+				
+				Page<BoardDTO> pageBoardDTOList = pageBoardList.map(pageBoard -> 
+																	BoardDTO.builder()
+																			.boardNo(pageBoard.getBoardNo())
+																			.boardTitle(pageBoard.getBoardTitle())
+																			.boardContent(pageBoard.getBoardContent())
+																			.boardWriter(pageBoard.getBoardWriter())
+																			.boardRegdate(
+																					pageBoard.getBoardRegdate() == null ?
+																					null : 
+																					pageBoard.getBoardRegdate().toString())
+																			.boardCnt(pageBoard.getBoardCnt())
+																			.build()
+																	);
+				responseDTO.setItem(pageBoardDTOList);
+				
+				return ResponseEntity.ok().body(responseDTO);
+			} catch(Exception e) {
+				responseDTO.setErrorMessage(e.getMessage());
+				return ResponseEntity.badRequest().body(responseDTO);
+			}
 		}
 
 }
